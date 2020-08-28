@@ -177,11 +177,15 @@ impl NgramsBuilder {
             let idx = if let Some(idx) = idx {
                 idx
             } else {
-                data.push(Entry::Branch(Branch {
-                    character,
-                    entries: vec![],
-                }));
-                data.len() - 1
+                let idx = bisect_branches(data, character);
+                data.insert(
+                    idx,
+                    Entry::Branch(Branch {
+                        character,
+                        entries: vec![],
+                    }),
+                );
+                idx
             };
 
             // Change the reference to that new entry
@@ -229,6 +233,24 @@ impl NgramsBuilder {
         write_branch(&self.data, output)?;
         Ok(())
     }
+}
+
+fn bisect_branches(data: &[Entry], character: u32) -> usize {
+    let mut low = 0;
+    let mut high = data.len();
+    while low < high {
+        let mid = (low + high) / 2;
+        let x = match &data[mid] {
+            Entry::Leaf(_) => panic!("Leaf in the branches"),
+            Entry::Branch(b) => b.character,
+        };
+        if character < x {
+            high = mid;
+        } else {
+            low = mid + 1;
+        }
+    }
+    low
 }
 
 fn bisect_leaves(data: &[Entry], id: u32) -> usize {
