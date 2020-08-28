@@ -81,13 +81,10 @@ fn write_branch<W: Write + Seek>(entries: &[Entry], output: &mut W) -> std::io::
     let start = pos + 1 + 4;
 
     if is_branch {
-        eprintln!("Writing branch at {} ({} entries)", pos, entries.len());
-
         // Reserve space for our record
         let mut data = Vec::new();
         data.resize((4 + 4) * entries.len(), 0);
         output.write_all(&data)?;
-        eprintln!("    End branch record at {}", output.seek(SeekFrom::Current(0))?);
 
         // Recursively write the entries at the end of the stream, each time
         // updating the entry in our record
@@ -102,8 +99,6 @@ fn write_branch<W: Write + Seek>(entries: &[Entry], output: &mut W) -> std::io::
 
                     // Update the entry in our record to point there
                     output.seek(SeekFrom::Start(start + (4 + 4) * (i as u64)))?;
-                    eprintln!("! {} + 8 * {} = {}", start, i, start + (4 + 4) * (i as u64));
-                    eprintln!("    Writing branch entry {} at {}", i, output.seek(SeekFrom::Current(0))?);
                     output.write_u32::<Order>(*character)?;
                     output.write_u32::<Order>(branch_pos as u32)?;
                 }
@@ -111,8 +106,6 @@ fn write_branch<W: Write + Seek>(entries: &[Entry], output: &mut W) -> std::io::
             }
         }
     } else {
-        eprintln!("Writing leaves at {}", pos);
-
         // Write the leaves
         for entry in entries {
             match entry {
@@ -121,15 +114,12 @@ fn write_branch<W: Write + Seek>(entries: &[Entry], output: &mut W) -> std::io::
                     count,
                     total_ngrams,
                 }) => {
-                    eprintln!("    Writing leaf entry at {}", output.seek(SeekFrom::Current(0))?);
                     output.write_u32::<Order>(*id)?;
                     output.write_all(&[*count, *total_ngrams])?;
                 }
                 Entry::Branch(_) => panic!("Branch in a leaf"),
             }
         }
-
-        eprintln!("    End leaf record at {}", output.seek(SeekFrom::Current(0))?);
     }
 
     Ok(pos)
