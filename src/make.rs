@@ -1,5 +1,5 @@
 use byteorder::{self, WriteBytesExt};
-use std::io::{Cursor, Seek, SeekFrom, Write};
+use std::io::{Seek, SeekFrom, Write};
 
 struct Branch {
     entries: Vec<Entry>,
@@ -137,8 +137,6 @@ fn main() {
     }
 
     // Serialize
-    let mut buffer: Vec<u8> = Vec::new();
-    let mut output = Cursor::new(&mut buffer);
+    let mut output = std::fs::File::create("trie.db").unwrap();
     write_branch(&data, &mut output).unwrap();
-    println!("{:?}", buffer);
 }
