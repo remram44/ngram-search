@@ -26,6 +26,26 @@ pub struct Ngrams {
     reader: BufReader<File>,
 }
 
+fn with_trigrams<T, F: FnMut([char; 3]) -> Result<(), T>>(string: &str, mut f: F) -> Result<(), T> {
+    let mut chars = string.chars();
+
+    if string.len() == 0 {
+        f(['$', '$', '$'])?;
+    } else {
+        let mut c1 = '$';
+        let mut c2 = '$';
+        while let Some(c3) = chars.next() {
+            f([c1, c2, c3])?;
+            c1 = c2;
+            c2 = c3;
+        }
+        f([c1, c2, '$'])?;
+        f([c2, '$', '$'])?;
+    }
+
+    Ok(())
+}
+
 impl Ngrams {
     pub fn builder() -> NgramsBuilder {
         Default::default()
@@ -131,10 +151,10 @@ pub struct NgramsBuilder {
 }
 
 impl NgramsBuilder {
-    pub fn add_trigram(&mut self, trigram: &str, id: u32, count: u8, total_ngrams: u8) {
+    fn add_trigram_chars(&mut self, trigram: &[char; 3], id: u32, count: u8, total_ngrams: u8) {
         let mut data = &mut self.data;
-        for character in trigram.chars() {
-            let character = character as u32;
+        for character in trigram {
+            let character = *character as u32;
             let mut idx = None;
             for (i, e) in data.iter_mut().enumerate() {
                 let e = match e {
@@ -178,6 +198,29 @@ impl NgramsBuilder {
                 total_ngrams,
             }),
         );
+    }
+
+    pub fn add_trigram(&mut self, trigram: &str, id: u32, count: u8, total_ngrams: u8) {
+        let mut chars = trigram.chars();
+        let c1 = chars.next().unwrap();
+        let c2 = chars.next().unwrap();
+        let c3 = chars.next().unwrap();
+        assert!(chars.next().is_none());
+        self.add_trigram_chars(&[c1, c2, c3], id, count, total_ngrams);
+    }
+
+    pub fn add(&mut self, string: &str, id: u32) {
+        let mut trigrams = HashMap::new();
+        let mut total_ngrams = 0;
+        with_trigrams::<(), _>(string, |chars| {
+            *trigrams.entry(chars).or_insert(0) += 1;
+            total_ngrams += 1;
+            Ok(())
+        }).unwrap();
+
+        for (trigram, count) in trigrams {
+            self.add_trigram_chars(&trigram, id, count, total_ngrams);
+        }
     }
 
     pub fn write<W: Write + Seek>(&self, output: &mut W) -> std::io::Result<()> {
