@@ -17,6 +17,24 @@ enum Entry {
     Leaf(Leaf),
 }
 
+fn bisect_leaves(data: &[Entry], id: u32) -> usize {
+    let mut low = 0;
+    let mut high = data.len();
+    while low < high {
+        let mid = (low + high) / 2;
+        let x = match &data[mid] {
+            Entry::Branch(_) => panic!("Branch in the leaves"),
+            Entry::Leaf(leaf) => leaf.id,
+        };
+        if id < x {
+            high = mid;
+        } else {
+            low = mid + 1;
+        }
+    }
+    low
+}
+
 fn add(mut data: &mut Vec<Entry>, trigram: &str, id: u32, count: u8, total_ngrams: u8) {
     for character in trigram.chars() {
         let character = character as u32;
@@ -52,12 +70,17 @@ fn add(mut data: &mut Vec<Entry>, trigram: &str, id: u32, count: u8, total_ngram
         data = &mut e.entries;
     }
 
-    // Now insert the leaf
-    data.push(Entry::Leaf(Leaf {
-        id,
-        count,
-        total_ngrams,
-    }));
+    // Now insert the leaf, sorted by id
+    // Find position
+    let idx = bisect_leaves(data, id);
+    data.insert(
+        idx,
+        Entry::Leaf(Leaf {
+            id,
+            count,
+            total_ngrams,
+        }),
+    );
 }
 
 type Order = byteorder::BigEndian;
