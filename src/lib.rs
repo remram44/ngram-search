@@ -58,10 +58,10 @@ impl Ngrams {
         })
     }
 
-    pub fn search_ngram(&mut self, trigram: &str) -> std::io::Result<Vec<Leaf>> {
+    pub fn search_ngram(&mut self, trigram: &[char; 3]) -> std::io::Result<Vec<Leaf>> {
         self.reader.seek(SeekFrom::Start(0))?;
-        for character in trigram.chars() {
-            let character = character as u32;
+        for character in trigram {
+            let character = *character as u32;
 
             // Check that this is a branch
             if self.reader.read_u8()? != 1 {
@@ -109,7 +109,7 @@ impl Ngrams {
         Ok(leaves)
     }
 
-    pub fn search_trigrams(&mut self, trigrams: &[(&str, u32)]) -> std::io::Result<Vec<(u32, f32)>> {
+    pub fn search_trigrams(&mut self, trigrams: &[([char; 3], u32)]) -> std::io::Result<Vec<(u32, f32)>> {
         let total_ngrams: u32 = trigrams.iter().map(|(_, c)| c).sum();
 
         // Look for each trigram in turn
@@ -118,7 +118,7 @@ impl Ngrams {
             let leaves = self.search_ngram(trigram).unwrap();
 
             // Print
-            println!("{}: {} hits:", trigram, leaves.len());
+            println!("{:?}: {} hits:", trigram, leaves.len());
             for leaf in &leaves {
                 println!(
                     "  {{ id: {}, count: {}, total_ngrams: {} }}",
@@ -134,7 +134,7 @@ impl Ngrams {
         }
 
         // Sort results
-        let mut matches = matches.drain().map(|(id, (shared, ngrams))| {
+        let mut matches = matches.into_iter().map(|(id, (shared, ngrams))| {
             let allgrams = total_ngrams + ngrams as u32 - shared;
             let score = shared as f32 / allgrams as f32;
             (id, score)
@@ -142,6 +142,17 @@ impl Ngrams {
         matches.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
 
         Ok(matches)
+    }
+
+    pub fn search(&mut self, string: &str) -> std::io::Result<Vec<(u32, f32)>> {
+        let mut trigrams = HashMap::new();
+        with_trigrams::<(), _>(string, |chars| {
+            *trigrams.entry(chars).or_insert(0) += 1;
+            Ok(())
+        }).unwrap();
+        let array = trigrams.into_iter().collect::<Vec<_>>();
+
+        self.search_trigrams(&array)
     }
 }
 
