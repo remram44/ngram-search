@@ -1,3 +1,4 @@
+use std::env;
 use std::path::Path;
 
 use lookup::Ngrams;
@@ -9,7 +10,7 @@ fn search(data: &mut Ngrams, string: &str) {
 
     // Print results
     println!("Final results ({}):", matches.len());
-    for (id, score) in matches {
+    for (id, score) in matches.iter().take(10) {
         println!("  id: {}, score: {:.3}", id, score);
     }
 }
@@ -17,7 +18,9 @@ fn search(data: &mut Ngrams, string: &str) {
 fn main() {
     let mut data = Ngrams::open(Path::new("trie.db")).unwrap();
 
-    search(&mut data, "mam");
-    search(&mut data, "ham");
-    search(&mut data, "pam");
+    let mut args = env::args();
+    let _arg0 = args.next();
+    for arg in args {
+        search(&mut data, &arg);
+    }
 }

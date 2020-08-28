@@ -117,15 +117,6 @@ impl Ngrams {
         for (trigram, count) in trigrams {
             let leaves = self.search_ngram(trigram).unwrap();
 
-            // Print
-            println!("{:?}: {} hits:", trigram, leaves.len());
-            for leaf in &leaves {
-                println!(
-                    "  {{ id: {}, count: {}, total_ngrams: {} }}",
-                    leaf.id, leaf.count, leaf.total_ngrams,
-                );
-            }
-
             // Update results
             for leaf in &leaves {
                 let match_ = matches.entry(leaf.id).or_insert((0, leaf.total_ngrams));
