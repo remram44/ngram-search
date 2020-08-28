@@ -1,3 +1,6 @@
+use byteorder::{self, WriteBytesExt};
+use std::io::{Cursor, Seek, SeekFrom, Write};
+
 struct Branch {
     entries: Vec<Entry>,
     character: u32,
@@ -57,6 +60,81 @@ fn add(mut data: &mut Vec<Entry>, trigram: &str, id: u32, count: u8, total_ngram
     }));
 }
 
+type Order = byteorder::BigEndian;
+
+fn write_branch<W: Write + Seek>(entries: &[Entry], output: &mut W) -> std::io::Result<u64> {
+    // Seek to end of stream, save position
+    let pos = output.seek(SeekFrom::End(0))?;
+
+    let is_branch = match entries.first() {
+        None => panic!("Empty entry"),
+        Some(Entry::Branch(_)) => true,
+        Some(Entry::Leaf(_)) => false,
+    };
+
+    // Tag content
+    output.write_all(&[if is_branch { 1u8 } else { 2u8 }])?;
+
+    // Write length
+    output.write_u32::<Order>(entries.len() as u32)?;
+
+    let start = pos + 1 + 4;
+
+    if is_branch {
+        eprintln!("Writing branch at {} ({} entries)", pos, entries.len());
+
+        // Reserve space for our record
+        let mut data = Vec::new();
+        data.resize((4 + 4) * entries.len(), 0);
+        output.write_all(&data)?;
+        eprintln!("    End branch record at {}", output.seek(SeekFrom::Current(0))?);
+
+        // Recursively write the entries at the end of the stream, each time
+        // updating the entry in our record
+        for (i, entry) in entries.iter().enumerate() {
+            match entry {
+                Entry::Branch(Branch {
+                    entries: branch_entries,
+                    character,
+                }) => {
+                    // Recursively write at the end
+                    let branch_pos = write_branch(branch_entries, output)?;
+
+                    // Update the entry in our record to point there
+                    output.seek(SeekFrom::Start(start + (4 + 4) * (i as u64)))?;
+                    eprintln!("! {} + 8 * {} = {}", start, i, start + (4 + 4) * (i as u64));
+                    eprintln!("    Writing branch entry {} at {}", i, output.seek(SeekFrom::Current(0))?);
+                    output.write_u32::<Order>(*character)?;
+                    output.write_u32::<Order>(branch_pos as u32)?;
+                }
+                Entry::Leaf(_) => panic!("Leaf in a branch"),
+            }
+        }
+    } else {
+        eprintln!("Writing leaves at {}", pos);
+
+        // Write the leaves
+        for entry in entries {
+            match entry {
+                Entry::Leaf(Leaf {
+                    id,
+                    count,
+                    total_ngrams,
+                }) => {
+                    eprintln!("    Writing leaf entry at {}", output.seek(SeekFrom::Current(0))?);
+                    output.write_u32::<Order>(*id)?;
+                    output.write_all(&[*count, *total_ngrams])?;
+                }
+                Entry::Branch(_) => panic!("Branch in a leaf"),
+            }
+        }
+
+        eprintln!("    End leaf record at {}", output.seek(SeekFrom::Current(0))?);
+    }
+
+    Ok(pos)
+}
+
 fn main() {
     let mut data: Vec<Entry> = Vec::new();
     for (trigram, count, total_ngrams) in &[
@@ -67,4 +145,10 @@ fn main() {
     ] {
         add(&mut data, trigram, 1, *count, *total_ngrams);
     }
+
+    // Serialize
+    let mut buffer: Vec<u8> = Vec::new();
+    let mut output = Cursor::new(&mut buffer);
+    write_branch(&data, &mut output).unwrap();
+    println!("{:?}", buffer);
 }
