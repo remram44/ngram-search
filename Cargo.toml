@@ -8,5 +8,9 @@ edition = "2018"
 name = "make"
 path = "src/make.rs"
 
+[[bin]]
+name = "search"
+path = "src/search.rs"
+
 [dependencies]
 byteorder = "1.3"
