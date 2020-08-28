@@ -2,7 +2,9 @@ use lookup::Ngrams;
 
 fn main() {
     let mut builder = Ngrams::builder();
-    builder.add("lb", 1);
+    builder.add("spam", 1);
+    builder.add("ham", 2);
+    builder.add("hammock", 3);
 
     // Serialize
     let mut output = std::fs::File::create("trie.db").unwrap();
