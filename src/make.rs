@@ -1,3 +1,5 @@
+use std::io::BufWriter;
+
 use lookup::Ngrams;
 
 fn main() {
@@ -7,6 +9,6 @@ fn main() {
     builder.add("hammock", 3);
 
     // Serialize
-    let mut output = std::fs::File::create("trie.db").unwrap();
+    let mut output = BufWriter::new(File::create("trie.db").unwrap());
     builder.write(&mut output).unwrap();
 }
