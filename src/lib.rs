@@ -1,7 +1,7 @@
 use byteorder::{self, ReadBytesExt, WriteBytesExt};
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{BufReader, Seek, SeekFrom, Write};
+use std::io::{Seek, SeekFrom, Write};
 use std::path::Path;
 
 type Order = byteorder::BigEndian;
@@ -22,8 +22,13 @@ pub enum Entry {
     Leaf(Leaf),
 }
 
+#[cfg(feature = "mmap")]
+type Reader = std::io::Cursor<memmap::Mmap>;
+#[cfg(not(feature = "mmap"))]
+type Reader = std::io::BufReader<File>;
+
 pub struct Ngrams {
-    reader: BufReader<File>,
+    reader: Reader,
 }
 
 fn with_trigrams<T, F: FnMut([char; 3]) -> Result<(), T>>(string: &str, mut f: F) -> Result<(), T> {
@@ -52,7 +57,14 @@ impl Ngrams {
     }
 
     pub fn open(path: &Path) -> std::io::Result<Ngrams> {
-        let reader = BufReader::new(File::open(path)?);
+        let file = File::open(path)?;
+        #[cfg(feature = "mmap")]
+        let reader = {
+            let data = unsafe { memmap::Mmap::map(&file) }?;
+            std::io::Cursor::new(data)
+        };
+        #[cfg(not(feature = "mmap"))]
+        let reader = std::io::BufReader::new(file);
         Ok(Ngrams {
             reader,
         })
