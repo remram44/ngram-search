@@ -3,6 +3,11 @@ name = "lookup"
 version = "0.1.0"
 authors = ["Remi Rampin <r@remirampin.com>"]
 edition = "2018"
+description = "Ngram-based indexing of strings into a binary file"
+repository = "https://github.com/remram44/ngram-search-rs"
+readme = "README.md"
+keywords = ["ngram", "ngrams", "trigram", "trigrams", "indexing"]
+license = "MIT"
 
 [[bin]]
 name = "make"
