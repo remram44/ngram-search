@@ -8,7 +8,7 @@ fn search(data: &mut Ngrams, string: &str) {
     let start = Instant::now();
 
     println!("\nSearching {}", string);
-    let matches = data.search(string).unwrap();
+    let matches = data.search(string, 0.3).unwrap();
     println!("{:.3} seconds", start.elapsed().as_millis() as f32 / 1000.0);
 
     // Print results

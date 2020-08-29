@@ -109,7 +109,7 @@ impl Ngrams {
         Ok(leaves)
     }
 
-    pub fn search_trigrams(&mut self, trigrams: &[([char; 3], u32)]) -> std::io::Result<Vec<(u32, f32)>> {
+    pub fn search_trigrams(&mut self, trigrams: &[([char; 3], u32)], threshold: f32) -> std::io::Result<Vec<(u32, f32)>> {
         let total_ngrams: u32 = trigrams.iter().map(|(_, c)| c).sum();
 
         // Look for each trigram in turn
@@ -125,17 +125,21 @@ impl Ngrams {
         }
 
         // Sort results
-        let mut matches = matches.into_iter().map(|(id, (shared, ngrams))| {
+        let mut matches = matches.into_iter().filter_map(|(id, (shared, ngrams))| {
             let allgrams = total_ngrams + ngrams as u32 - shared;
             let score = shared as f32 / allgrams as f32;
-            (id, score)
+            if score >= threshold {
+                Some((id, score))
+            } else {
+                None
+            }
         }).collect::<Vec<_>>();
         matches.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
 
         Ok(matches)
     }
 
-    pub fn search(&mut self, string: &str) -> std::io::Result<Vec<(u32, f32)>> {
+    pub fn search(&mut self, string: &str, threshold: f32) -> std::io::Result<Vec<(u32, f32)>> {
         let mut trigrams = HashMap::new();
         with_trigrams::<(), _>(string, |chars| {
             *trigrams.entry(chars).or_insert(0) += 1;
@@ -143,7 +147,7 @@ impl Ngrams {
         }).unwrap();
         let array = trigrams.into_iter().collect::<Vec<_>>();
 
-        self.search_trigrams(&array)
+        self.search_trigrams(&array, threshold)
     }
 }
 
