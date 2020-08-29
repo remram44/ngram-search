@@ -4,7 +4,9 @@ use std::io::{BufRead, BufReader, BufWriter};
 use lookup::Ngrams;
 
 fn main() {
-    let total_lines = BufReader::new(File::open("../test-names.txt").unwrap()).lines().count();
+    let total_lines = BufReader::new(File::open("../test-names.txt").unwrap())
+        .lines()
+        .count();
     eprintln!("{} lines total", total_lines);
 
     // Build from a file

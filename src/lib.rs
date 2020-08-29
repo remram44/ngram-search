@@ -31,7 +31,10 @@ pub struct Ngrams {
     reader: Reader,
 }
 
-fn with_trigrams<T, F: FnMut([char; 3]) -> Result<(), T>>(string: &str, mut f: F) -> Result<(), T> {
+fn with_trigrams<T, F: FnMut([char; 3]) -> Result<(), T>>(
+    string: &str,
+    mut f: F,
+) -> Result<(), T> {
     let mut chars = string.chars();
 
     if string.len() == 0 {
@@ -65,12 +68,13 @@ impl Ngrams {
         };
         #[cfg(not(feature = "mmap"))]
         let reader = std::io::BufReader::new(file);
-        Ok(Ngrams {
-            reader,
-        })
+        Ok(Ngrams { reader })
     }
 
-    pub fn search_ngram(&mut self, trigram: &[char; 3]) -> std::io::Result<Vec<Leaf>> {
+    pub fn search_ngram(
+        &mut self,
+        trigram: &[char; 3],
+    ) -> std::io::Result<Vec<Leaf>> {
         self.reader.seek(SeekFrom::Start(0))?;
         for character in trigram {
             let character = *character as u32;
@@ -121,18 +125,24 @@ impl Ngrams {
         Ok(leaves)
     }
 
-    pub fn search_trigrams(&mut self, trigrams: &[([char; 3], u32)], threshold: f32) -> std::io::Result<Vec<(u32, f32)>> {
+    pub fn search_trigrams(
+        &mut self,
+        trigrams: &[([char; 3], u32)],
+        threshold: f32,
+    ) -> std::io::Result<Vec<(u32, f32)>> {
         let total_ngrams: u32 = trigrams.iter().map(|(_, c)| c).sum();
 
         // Look for all trigrams
-        let hits = trigrams.iter()
+        let hits = trigrams
+            .iter()
             .map(|(trigram, count)| {
                 (self.search_ngram(trigram).unwrap(), *count)
             })
             .collect::<Vec<_>>();
 
         // Build a list of results by merging all those hits together
-        let mut matches: Vec<(u32, (u32, u8))> = Vec::new(); // (id, (nb_shared_ngrams, total_ngrams)
+        // (id, (nb_shared_ngrams, total_ngrams)
+        let mut matches: Vec<(u32, (u32, u8))> = Vec::new();
         let mut positions = Vec::new();
         positions.resize(hits.len(), 0);
         loop {
@@ -177,26 +187,34 @@ impl Ngrams {
         }
 
         // Sort results
-        let mut matches = matches.into_iter().filter_map(|(id, (shared, ngrams))| {
-            let allgrams = total_ngrams + ngrams as u32 - shared;
-            let score = shared as f32 / allgrams as f32;
-            if score >= threshold {
-                Some((id, score))
-            } else {
-                None
-            }
-        }).collect::<Vec<_>>();
+        let mut matches = matches
+            .into_iter()
+            .filter_map(|(id, (shared, ngrams))| {
+                let allgrams = total_ngrams + ngrams as u32 - shared;
+                let score = shared as f32 / allgrams as f32;
+                if score >= threshold {
+                    Some((id, score))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
         matches.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
 
         Ok(matches)
     }
 
-    pub fn search(&mut self, string: &str, threshold: f32) -> std::io::Result<Vec<(u32, f32)>> {
+    pub fn search(
+        &mut self,
+        string: &str,
+        threshold: f32,
+    ) -> std::io::Result<Vec<(u32, f32)>> {
         let mut trigrams = HashMap::new();
         with_trigrams::<(), _>(string, |chars| {
             *trigrams.entry(chars).or_insert(0) += 1;
             Ok(())
-        }).unwrap();
+        })
+        .unwrap();
         let array = trigrams.into_iter().collect::<Vec<_>>();
 
         self.search_trigrams(&array, threshold)
@@ -209,7 +227,13 @@ pub struct NgramsBuilder {
 }
 
 impl NgramsBuilder {
-    fn add_trigram_chars(&mut self, trigram: &[char; 3], id: u32, count: u8, total_ngrams: u8) {
+    fn add_trigram_chars(
+        &mut self,
+        trigram: &[char; 3],
+        id: u32,
+        count: u8,
+        total_ngrams: u8,
+    ) {
         let mut data = &mut self.data;
         for character in trigram {
             let character = *character as u32;
@@ -222,8 +246,9 @@ impl NgramsBuilder {
                 if e.character == character {
                     // We found the right branch, go down
 
-                    // We can't assign to `data` here, doesn't pass borrow checker
-                    // So we store the index in idx and assign data below
+                    // We can't assign to `data` here, doesn't pass borrow
+                    // checker So we store the index in idx
+                    // and assign data below
                     idx = Some(i);
                     break;
                 }
@@ -245,7 +270,11 @@ impl NgramsBuilder {
             };
 
             // Change the reference to that new entry
-            let e = if let Entry::Branch(b) = &mut data[idx] { b } else { panic!() };
+            let e = if let Entry::Branch(b) = &mut data[idx] {
+                b
+            } else {
+                panic!()
+            };
             data = &mut e.entries;
         }
 
@@ -262,7 +291,13 @@ impl NgramsBuilder {
         );
     }
 
-    pub fn add_trigram(&mut self, trigram: &str, id: u32, count: u8, total_ngrams: u8) {
+    pub fn add_trigram(
+        &mut self,
+        trigram: &str,
+        id: u32,
+        count: u8,
+        total_ngrams: u8,
+    ) {
         let mut chars = trigram.chars();
         let c1 = chars.next().unwrap();
         let c2 = chars.next().unwrap();
@@ -278,14 +313,18 @@ impl NgramsBuilder {
             *trigrams.entry(chars).or_insert(0) += 1;
             total_ngrams += 1;
             Ok(())
-        }).unwrap();
+        })
+        .unwrap();
 
         for (trigram, count) in trigrams {
             self.add_trigram_chars(&trigram, id, count, total_ngrams);
         }
     }
 
-    pub fn write<W: Write + Seek>(&self, output: &mut W) -> std::io::Result<()> {
+    pub fn write<W: Write + Seek>(
+        &self,
+        output: &mut W,
+    ) -> std::io::Result<()> {
         write_branch(&self.data, output)?;
         Ok(())
     }
@@ -327,7 +366,10 @@ fn bisect_leaves(data: &[Entry], id: u32) -> usize {
     low
 }
 
-fn write_branch<W: Write + Seek>(entries: &[Entry], output: &mut W) -> std::io::Result<u64> {
+fn write_branch<W: Write + Seek>(
+    entries: &[Entry],
+    output: &mut W,
+) -> std::io::Result<u64> {
     // Seek to end of stream, save position
     let pos = output.seek(SeekFrom::End(0))?;
 
@@ -363,7 +405,8 @@ fn write_branch<W: Write + Seek>(entries: &[Entry], output: &mut W) -> std::io::
                     let branch_pos = write_branch(branch_entries, output)?;
 
                     // Update the entry in our record to point there
-                    output.seek(SeekFrom::Start(start + (4 + 4) * (i as u64)))?;
+                    output
+                        .seek(SeekFrom::Start(start + (4 + 4) * (i as u64)))?;
                     output.write_u32::<Order>(*character)?;
                     output.write_u32::<Order>(branch_pos as u32)?;
                 }
