@@ -124,16 +124,56 @@ impl Ngrams {
     pub fn search_trigrams(&mut self, trigrams: &[([char; 3], u32)], threshold: f32) -> std::io::Result<Vec<(u32, f32)>> {
         let total_ngrams: u32 = trigrams.iter().map(|(_, c)| c).sum();
 
-        // Look for each trigram in turn
-        let mut matches: HashMap<u32, (u32, u8)> = HashMap::new(); // id -> (nb_shared_ngrams, total_ngrams)
-        for (trigram, count) in trigrams {
-            let leaves = self.search_ngram(trigram).unwrap();
+        // Look for all trigrams
+        let hits = trigrams.iter()
+            .map(|(trigram, count)| {
+                (self.search_ngram(trigram).unwrap(), *count)
+            })
+            .collect::<Vec<_>>();
 
-            // Update results
-            for leaf in &leaves {
-                let match_ = matches.entry(leaf.id).or_insert((0, leaf.total_ngrams));
-                match_.0 += (*count).min(leaf.count as u32);
+        // Build a list of results by merging all those hits together
+        let mut matches: Vec<(u32, (u32, u8))> = Vec::new(); // (id, (nb_shared_ngrams, total_ngrams)
+        let mut positions = Vec::new();
+        positions.resize(hits.len(), 0);
+        loop {
+            // Find the smallest next element and its count
+            let mut smallest_id = None;
+            let mut total_ngrams = 0;
+            for i in 0..hits.len() {
+                if positions[i] < hits[i].0.len() {
+                    let leaf = &hits[i].0[positions[i]];
+                    if let Some(s) = smallest_id {
+                        if leaf.id < s {
+                            smallest_id = Some(leaf.id);
+                            total_ngrams = leaf.total_ngrams;
+                        }
+                    } else {
+                        smallest_id = Some(leaf.id);
+                        total_ngrams = leaf.total_ngrams;
+                    }
+                }
             }
+
+            // No next element: we're done
+            let smallest_id = match smallest_id {
+                Some(s) => s,
+                None => break,
+            };
+
+            // Compute the count and move forward in those Vecs
+            let mut count = 0;
+            for i in 0..hits.len() {
+                if positions[i] < hits[i].0.len() {
+                    let leaf = &hits[i].0[positions[i]];
+                    if leaf.id == smallest_id {
+                        count += hits[i].1.min(leaf.count as u32);
+                        positions[i] += 1;
+                    }
+                }
+            }
+
+            // Store result
+            matches.push((smallest_id, (count, total_ngrams)));
         }
 
         // Sort results
