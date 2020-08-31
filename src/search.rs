@@ -1,12 +1,15 @@
 use std::env;
 use std::path::Path;
+use std::time::Instant;
 
 use lookup::Ngrams;
 
 fn search(data: &mut Ngrams, string: &str) {
-    println!("\nSearching {}", string);
+    let start = Instant::now();
 
+    println!("\nSearching {}", string);
     let matches = data.search(string).unwrap();
+    println!("{:.3} seconds", start.elapsed().as_millis() as f32 / 1000.0);
 
     // Print results
     println!("Final results ({}):", matches.len());
