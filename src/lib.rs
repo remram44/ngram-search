@@ -142,24 +142,24 @@ impl Ngrams {
 
         // Build a list of results by merging all those hits together
         // (id, (nb_shared_ngrams, total_ngrams)
-        let mut matches: Vec<(u32, (u32, u8))> = Vec::new();
+        let mut matches: Vec<(u32, f32)> = Vec::new();
         let mut positions = Vec::new();
         positions.resize(hits.len(), 0);
         loop {
             // Find the smallest next element and its count
             let mut smallest_id = None;
-            let mut total_ngrams = 0;
+            let mut match_total_ngrams = 0;
             for i in 0..hits.len() {
                 if positions[i] < hits[i].0.len() {
                     let leaf = &hits[i].0[positions[i]];
                     if let Some(s) = smallest_id {
                         if leaf.id < s {
                             smallest_id = Some(leaf.id);
-                            total_ngrams = leaf.total_ngrams;
+                            match_total_ngrams = leaf.total_ngrams;
                         }
                     } else {
                         smallest_id = Some(leaf.id);
-                        total_ngrams = leaf.total_ngrams;
+                        match_total_ngrams = leaf.total_ngrams;
                     }
                 }
             }
@@ -171,34 +171,31 @@ impl Ngrams {
             };
 
             // Compute the count and move forward in those Vecs
-            let mut count = 0;
+            let mut shared = 0;
             for i in 0..hits.len() {
                 if positions[i] < hits[i].0.len() {
                     let leaf = &hits[i].0[positions[i]];
                     if leaf.id == smallest_id {
-                        count += hits[i].1.min(leaf.count as u32);
+                        shared += hits[i].1.min(leaf.count as u32);
                         positions[i] += 1;
                     }
                 }
             }
 
+            // Compute score
+            let allgrams = total_ngrams + match_total_ngrams as u32 - shared;
+            let score = shared as f32 / allgrams as f32;
+
+            // Threshold
+            if score < threshold {
+                continue;
+            }
+
             // Store result
-            matches.push((smallest_id, (count, total_ngrams)));
+            matches.push((smallest_id, score));
         }
 
         // Sort results
-        let mut matches = matches
-            .into_iter()
-            .filter_map(|(id, (shared, ngrams))| {
-                let allgrams = total_ngrams + ngrams as u32 - shared;
-                let score = shared as f32 / allgrams as f32;
-                if score >= threshold {
-                    Some((id, score))
-                } else {
-                    None
-                }
-            })
-            .collect::<Vec<_>>();
         matches.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
 
         Ok(matches)
