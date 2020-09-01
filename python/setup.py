@@ -1,5 +1,7 @@
 from setuptools import Extension, setup
+import io
 import os
+
 
 _DONT_WANT = ('', '0', 'n', 'no', 'false')
 
@@ -20,6 +22,8 @@ def _cython_exts(extensions):
         return extensions
 
 
+with io.open('README.rst', encoding='utf-8') as fp:
+    description = fp.read()
 setup(
     name='ngram-search',
     version='0.1',
@@ -27,4 +31,23 @@ setup(
     package_data={'ngram_search': ['*.pxd']},
     ext_modules=_cython_exts([Extension('ngram_search._search', ['ngram_search/_search.pyx'])]),
     zip_safe=False,
+    description="Ngram-based indexing of strings into a binary file",
+    author="Remi Rampin",
+    author_email="remirampin@gmail.com",
+    project_urls={
+        'Homepage': 'https://gitlab.com/remram44/ngram-search',
+        'Source': 'https://gitlab.com/remram44/ngram-search',
+        'Tracker': 'https://gitlab.com/remram44/ngram-search/-/issues',
+    },
+    long_description=description,
+    license='MIT',
+    keywords=['ngram', 'indexing', 'full-text', 'text-search', 'full-text-search'],
+    classifiers=[
+        'Development Status :: 3 - Alpha',
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: MIT License',
+        'Programming Language :: Cython',
+        'Topic :: Database',
+        'Topic :: Text Processing',
+    ],
 )
