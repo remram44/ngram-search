@@ -13,15 +13,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "755456fae044e6fa1ebbbd1b3e902ae19e73097ed4ed87bb79934a867c007bc3"
 
 [[package]]
-name = "lookup"
-version = "0.1.0"
-dependencies = [
- "byteorder",
- "memmap",
- "unicode-normalization",
-]
-
-[[package]]
 name = "memmap"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -29,6 +20,15 @@ checksum = "6585fd95e7bb50d6cc31e20d4cf9afb4e2ba16c5846fc76793f11218da9c475b"
 dependencies = [
  "libc",
  "winapi",
+]
+
+[[package]]
+name = "ngram-search"
+version = "0.1.0"
+dependencies = [
+ "byteorder",
+ "memmap",
+ "unicode-normalization",
 ]
 
 [[package]]

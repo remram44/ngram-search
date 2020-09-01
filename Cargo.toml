@@ -1,5 +1,5 @@
 [package]
-name = "lookup"
+name = "ngram-search"
 version = "0.1.0"
 authors = ["Remi Rampin <r@remirampin.com>"]
 edition = "2018"

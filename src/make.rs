@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter};
 
-use lookup::Ngrams;
+use ngram_search::Ngrams;
 
 fn main() {
     let total_lines = BufReader::new(File::open("../test-names.txt").unwrap())

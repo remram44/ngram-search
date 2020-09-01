@@ -2,7 +2,7 @@ use std::env;
 use std::path::Path;
 use std::time::Instant;
 
-use lookup::Ngrams;
+use ngram_search::Ngrams;
 
 fn search(data: &mut Ngrams, string: &str) {
     let start = Instant::now();
