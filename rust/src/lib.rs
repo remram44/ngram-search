@@ -474,3 +474,23 @@ fn write_branch<W: Write + Seek>(
 
     Ok(pos)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::with_trigrams;
+
+    #[test]
+    fn test_trigrams() {
+        let mut trigrams = Vec::new();
+        with_trigrams::<(), _>("spam", |t| { trigrams.push(t); Ok(()) }).unwrap();
+        let expected: &[[char; 3]] = &[
+            ['$', '$', 's'],
+            ['$', 's', 'p'],
+            ['s', 'p', 'a'],
+            ['p', 'a', 'm'],
+            ['a', 'm', '$'],
+            ['m', '$', '$'],
+        ];
+        assert_eq!(trigrams, expected);
+    }
+}
