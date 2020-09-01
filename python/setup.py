@@ -26,7 +26,7 @@ with io.open('README.rst', encoding='utf-8') as fp:
     description = fp.read()
 setup(
     name='ngram-search',
-    version='0.1',
+    version='0.1.1',
     packages=['ngram_search'],
     package_data={'ngram_search': ['*.pxd']},
     ext_modules=_cython_exts([Extension('ngram_search._search', ['ngram_search/_search.pyx'])]),

@@ -24,7 +24,7 @@ dependencies = [
 
 [[package]]
 name = "ngram-search"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "byteorder",
  "memmap",
