@@ -7,18 +7,18 @@ use unicode_normalization::UnicodeNormalization;
 
 type Order = byteorder::BigEndian;
 
-pub struct Leaf {
-    pub id: u32,
-    pub count: u8,
-    pub total_ngrams: u8,
+struct Leaf {
+    id: u32,
+    count: u8,
+    total_ngrams: u8,
 }
 
-pub struct Branch {
-    pub entries: Vec<Entry>,
-    pub character: u32,
+struct Branch {
+    entries: Vec<Entry>,
+    character: u32,
 }
 
-pub enum Entry {
+enum Entry {
     Branch(Branch),
     Leaf(Leaf),
 }
@@ -74,7 +74,7 @@ impl Ngrams {
         Ok(Ngrams { reader })
     }
 
-    pub fn search_ngram(
+    fn search_ngram(
         &mut self,
         trigram: &[char; 3],
     ) -> std::io::Result<Vec<Leaf>> {
@@ -128,7 +128,7 @@ impl Ngrams {
         Ok(leaves)
     }
 
-    pub fn search_trigrams(
+    fn search_trigrams(
         &mut self,
         trigrams: &[([char; 3], u32)],
         threshold: f32,
@@ -289,21 +289,6 @@ impl NgramsBuilder {
                 total_ngrams,
             }),
         );
-    }
-
-    pub fn add_trigram(
-        &mut self,
-        trigram: &str,
-        id: u32,
-        count: u8,
-        total_ngrams: u8,
-    ) {
-        let mut chars = trigram.chars();
-        let c1 = chars.next().unwrap();
-        let c2 = chars.next().unwrap();
-        let c3 = chars.next().unwrap();
-        assert!(chars.next().is_none());
-        self.add_trigram_chars(&[c1, c2, c3], id, count, total_ngrams);
     }
 
     pub fn add(&mut self, string: &str, id: u32) {
