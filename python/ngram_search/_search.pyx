@@ -3,6 +3,7 @@ import typing
 
 
 from libc.stdlib cimport malloc, free, realloc
+from libc.stdio cimport FILE
 
 
 ctypedef int (*compar_t)(const void*, const void*)
@@ -10,6 +11,13 @@ ctypedef int (*compar_t)(const void*, const void*)
 
 cdef extern from "<stdlib.h>":
     void qsort(void* base, size_t nmemb, size_t size, compar_t compar)
+
+
+cdef extern from "stdio.h":
+    FILE *fdopen(int fd, const char* mode)
+    int fseek(FILE* stream, long offset, int whence)
+    int getc(FILE* stream)
+    size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream)
 
 
 cdef extern from "<arpa/inet.h>":
@@ -36,41 +44,26 @@ cdef struct Match:
     float score
 
 
-cdef char read_u8(file):
-    cdef char number
-    cdef char* c_bytes
-
-    # TODO: Use raw FILE*
-    py_bytes = file.read(1)
-    if len(py_bytes) != 1:
-        raise SearchError("EOF")
-    c_bytes = py_bytes
-    return c_bytes[0]
+cdef char read_u8(FILE* file):
+    return getc(file)
 
 
-cdef long read_u32(file):
-    cdef char* c_bytes
-    cdef long* number_p
+cdef long read_u32(FILE* file):
     cdef long number
 
-    # TODO: Use raw FILE*
-    py_bytes = file.read(4)
-    if len(py_bytes) != 4:
+    if fread(<char*>&number, 1, 4, file) != 4:
         raise SearchError("EOF")
-    c_bytes = py_bytes
-    number_p = <long*>c_bytes
-    number = number_p[0]
     return ntohl(number)
 
 
-cdef Hits search_trigrams(file, unsigned int* trigram):
+cdef Hits search_trigrams(FILE* file, unsigned int* trigram):
     cdef int character
     cdef int size
     cdef int found
     cdef long c, p
     cdef Hits hits
 
-    file.seek(0, 0)
+    fseek(file, 0, 0)
 
     for i in range(3):
         character = trigram[i]
@@ -87,7 +80,7 @@ cdef Hits search_trigrams(file, unsigned int* trigram):
             p = read_u32(file)
             if c == character:
                 found = 1
-                file.seek(p, 0)
+                fseek(file, p, 0)
                 break
 
         if not found:
@@ -131,6 +124,7 @@ def search(
     trigrams: typing.List[(typing.Tuple[int, ...], int)],
     threshold: float,
 ) -> typing.List[typing.Tuple[int, float]]:
+    cdef FILE* c_file
     cdef Hits* hits = NULL
     cdef unsigned int[3] c_trigram
     cdef int total_ngrams
@@ -145,6 +139,8 @@ def search(
     cdef Match* matches = NULL
     cdef size_t matches_len
     cdef size_t matches_size
+
+    c_file = fdopen(file.fileno(), 'rb')
 
     try:
         nb_trigrams = len(trigrams)
@@ -161,7 +157,7 @@ def search(
             trigram, _ = trigrams[i]
             for j in range(3):
                 c_trigram[j] = trigram[j]
-            hits[i] = search_trigrams(file, c_trigram)
+            hits[i] = search_trigrams(c_file, c_trigram)
 
         positions = <size_t*>malloc(nb_trigrams * sizeof(size_t))
         for i in range(nb_trigrams):
