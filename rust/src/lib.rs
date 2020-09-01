@@ -19,6 +19,7 @@
 //! // Write it to a file
 //! let mut file = BufWriter::new(File::create(path).unwrap());
 //! builder.write(&mut file).unwrap();
+//! drop(file);
 //!
 //! // Search our index
 //! let mut data = Ngrams::open(path).unwrap();
@@ -32,7 +33,7 @@
 //! assert_eq!(
 //!     data.search("spa", 0.2).unwrap(),
 //!     vec![
-//!         (0, 0.22222222), // "spam" is close
+//!         (0, 0.375), // "spam" is close
 //!     ],
 //! );
 //! ```
