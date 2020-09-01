@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Seek, SeekFrom, Write};
 use std::path::Path;
+use unicode_normalization::UnicodeNormalization;
 
 type Order = byteorder::BigEndian;
 
@@ -35,7 +36,9 @@ fn with_trigrams<T, F: FnMut([char; 3]) -> Result<(), T>>(
     string: &str,
     mut f: F,
 ) -> Result<(), T> {
-    let mut chars = string.chars();
+    // Normalize
+    let string = string.to_lowercase();
+    let mut chars = string.nfc();
 
     if string.len() == 0 {
         f(['$', '$', '$'])?;
