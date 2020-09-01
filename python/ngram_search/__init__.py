@@ -1,6 +1,13 @@
+import typing
 import unicodedata
 
 from . import _search
+
+
+__all__ = ['SearchError', 'Ngrams']
+
+
+SearchError = _search.SearchError
 
 
 END_MARKER = '$'
@@ -25,7 +32,11 @@ class Ngrams(object):
     def __init__(self, path):
         self._file = open(path, 'rb')
 
-    def search(self, string: str, threshold: float):
+    def search(
+        self,
+        string: str,
+        threshold: float = 0.3,
+    ) -> typing.List[typing.Tuple[int, float]]:
         # Normalize string
         string = string.lower()
         string = unicodedata.normalize('NFC', string)
