@@ -6,7 +6,8 @@ edition = "2018"
 description = "Ngram-based indexing of strings into a binary file"
 repository = "https://github.com/remram44/ngram-search-rs"
 readme = "README.md"
-keywords = ["ngram", "ngrams", "trigram", "trigrams", "indexing", "full-text-search", "text-search", "search"]
+keywords = ["n-gram", "index", "indexing", "full-text", "text-search"]
+categories = ["database", "text-processing"]
 license = "MIT"
 
 [[bin]]
