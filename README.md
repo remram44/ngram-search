@@ -35,3 +35,14 @@ assert_eq!(
     ],
 );
 ```
+
+Example (Python):
+
+```python console
+>>> from ngram_search import Ngrams
+>>> ngrams = Ngrams(path)
+>>> ngrams.search("ham", 0.24)
+[(0, 1.0), (2, 0.25)]
+>>> ngrams.search("spa", 0.2)
+[(0, 0.2222222222222222)]
+```
