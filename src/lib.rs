@@ -1,3 +1,42 @@
+//! Ngram-based indexing of strings into a binary file.
+//!
+//! This library can be used to index lots of strings into a file (identified
+//! by a numeric ID), and then perform a fuzzy search over those strings.
+//!
+//! Example:
+//! ```
+//! # use std::io::BufWriter;
+//! # use std::fs::File;
+//! # use std::path::Path;
+//! # let path = Path::new("/tmp/test.db");
+//! # use ngram_search::Ngrams;
+//! // Build index
+//! let mut builder = Ngrams::builder();
+//! builder.add("spam", 0);
+//! builder.add("ham", 1);
+//! builder.add("mam", 2);
+//!
+//! // Write it to a file
+//! let mut file = BufWriter::new(File::create(path).unwrap());
+//! builder.write(&mut file).unwrap();
+//!
+//! // Search our index
+//! let mut data = Ngrams::open(path).unwrap();
+//! assert_eq!(
+//!     data.search("ham", 0.24).unwrap(),
+//!     vec![
+//!         (1, 1.0), // "ham" is an exact match
+//!         (2, 0.25), // "mam" is close
+//!     ],
+//! );
+//! assert_eq!(
+//!     data.search("spa", 0.2).unwrap(),
+//!     vec![
+//!         (0, 0.22222222), // "spam" is close
+//!     ],
+//! );
+//! ```
+
 use byteorder::{self, ReadBytesExt, WriteBytesExt};
 use std::collections::HashMap;
 use std::fs::File;
@@ -28,6 +67,7 @@ type Reader = std::io::Cursor<memmap::Mmap>;
 #[cfg(not(feature = "mmap"))]
 type Reader = std::io::BufReader<File>;
 
+/// Ngrams index of strings backed by a file.
 pub struct Ngrams {
     reader: Reader,
 }
@@ -58,10 +98,12 @@ fn with_trigrams<T, F: FnMut([char; 3]) -> Result<(), T>>(
 }
 
 impl Ngrams {
+    /// Return a builder object used to build an index.
     pub fn builder() -> NgramsBuilder {
         Default::default()
     }
 
+    /// Open an index from a file.
     pub fn open(path: &Path) -> std::io::Result<Ngrams> {
         let file = File::open(path)?;
         #[cfg(feature = "mmap")]
@@ -204,6 +246,10 @@ impl Ngrams {
         Ok(matches)
     }
 
+    /// Search for a string in the index.
+    ///
+    /// Returns a vector of pairs `(string id, score)` sorted by descending
+    /// scores.
     pub fn search(
         &mut self,
         string: &str,
@@ -221,6 +267,11 @@ impl Ngrams {
     }
 }
 
+/// A builder object used to build the index file.
+///
+/// Note that the index will be held into memory during construction, and is
+/// only written to disk when you call write(). Therefore you might need a lot
+/// of memory for construction.
 #[derive(Default)]
 pub struct NgramsBuilder {
     data: Vec<Entry>,
@@ -291,6 +342,10 @@ impl NgramsBuilder {
         );
     }
 
+    /// Add a string to the index.
+    ///
+    /// The ID is what will be returned when searching for this string in the
+    /// index, and should not be used multiple times.
     pub fn add(&mut self, string: &str, id: u32) {
         let mut trigrams = HashMap::new();
         let mut total_ngrams = 0;
@@ -306,6 +361,7 @@ impl NgramsBuilder {
         }
     }
 
+    /// Write the index to a file.
     pub fn write<W: Write + Seek>(
         &self,
         output: &mut W,
