@@ -31,7 +31,7 @@ assert_eq!(
 assert_eq!(
     data.search("spa", 0.2).unwrap(),
     vec![
-        (0, 0.22222222), // "spam" is close
+        (0, 0.375), // "spam" is close
     ],
 );
 ```
@@ -44,5 +44,5 @@ Example (Python):
 >>> ngrams.search("ham", 0.24)
 [(0, 1.0), (2, 0.25)]
 >>> ngrams.search("spa", 0.2)
-[(0, 0.2222222222222222)]
+[(0, 0.375)]
 ```
