@@ -20,7 +20,14 @@ cdef extern from "stdio.h":
     size_t fread(void* ptr, size_t size, size_t nmemb, FILE* stream)
 
 
-cdef extern from "<arpa/inet.h>":
+cdef extern from *:
+    """
+    #if defined(_WIN32) || defined(MS_WINDOWS) || defined(_MSC_VER)
+      #include <winsock2.h>
+    #else
+      #include <arpa/inet.h>
+    #endif
+    """
     unsigned long ntohl(unsigned long number)
 
 
