@@ -34,7 +34,7 @@ extensions = _cython_exts([
 ])
 setup(
     name='ngram-search',
-    version='0.1.1',
+    version='0.1.2',
     packages=['ngram_search'],
     package_data={'ngram_search': ['*.pxd']},
     ext_modules=extensions,

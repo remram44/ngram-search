@@ -1,6 +1,6 @@
 [package]
 name = "ngram-search"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Remi Rampin <r@remirampin.com>"]
 edition = "2018"
 description = "Ngram-based indexing of strings into a binary file"
