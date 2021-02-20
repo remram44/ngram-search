@@ -43,9 +43,9 @@ setup(
     author="Remi Rampin",
     author_email="remirampin@gmail.com",
     project_urls={
-        'Homepage': 'https://gitlab.com/remram44/ngram-search',
-        'Source': 'https://gitlab.com/remram44/ngram-search',
-        'Tracker': 'https://gitlab.com/remram44/ngram-search/-/issues',
+        'Homepage': 'https://github.com/remram44/ngram-search',
+        'Source': 'https://github.com/remram44/ngram-search',
+        'Tracker': 'https://github.com/remram44/ngram-search/issues',
     },
     long_description=description,
     license='MIT',
