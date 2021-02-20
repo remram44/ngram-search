@@ -1,0 +1,41 @@
+name: Test
+
+on: [push, pull_request]
+
+jobs:
+  python:
+    name: Test Python
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-python@v2
+
+      - name: Install Cython
+        run: pip install Cython
+
+      - name: Build
+        run: cd python; BUILD_CYTHON=1 python setup.py develop
+
+      - name: Test
+        run: cd python; python tests.py
+
+  rust:
+    name: Test Rust
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions-rs/toolchain@v1
+        id: rustup
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Test
+        run: cd rust; cargo test
+
+      - name: Check output
+        run: diff -q /tmp/test.db python/test.db
